@@ -241,6 +241,7 @@ const HomePage = () => {
                       <OptimizedServiceCard key={service.id} {...service} contactNumber={service.contact_number || undefined} timeAgo={formatDistanceToNow(new Date(service.created_at), { addSuffix: true, locale: ar })} is_verified={service.profiles?.is_verified ?? false} />
                     ))}
                   </div>
+                  
                 </div>
               );
             } else {
