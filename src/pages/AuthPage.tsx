@@ -18,24 +18,22 @@ const GoogleIcon = () => (
     </svg>
 );
 
-// --- بداية الإضافة: دالة التحقق من كلمة المرور ---
 const validatePassword = (password: string) => {
     const errors: string[] = [];
     if (password.length < 6) {
-        errors.push("يجب أن تتكون من 6 أحرف على الأقل.");
+        errors.push("6 أحرف على الأقل.");
     }
     if (!/[a-z]/.test(password)) {
-        errors.push("يجب أن تحتوي على حرف إنجليزي صغير (مثل: a, b, c).");
+        errors.push("حرف إنجليزي صغير (a-z) على الأقل.");
     }
     if (!/[A-Z]/.test(password)) {
-        errors.push("يجب أن تحتوي على حرف إنجليزي كبير (مثل: A, B, C).");
+        errors.push("حرف إنجليزي كبير (A-Z) على الأقل.");
     }
     if (!/[0-9]/.test(password)) {
-        errors.push("يجب أن تحتوي على رقم (مثل: 1, 2, 3).");
+        errors.push("رقم (0-9) على الأقل.");
     }
     return errors;
 };
-// --- نهاية الإضافة ---
 
 const AuthPage = () => {
     const [email, setEmail] = useState('');
@@ -47,6 +45,22 @@ const AuthPage = () => {
     const navigate = useNavigate();
     const [resetEmail, setResetEmail] = useState('');
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    
+    // --- بداية التعديل 1: إضافة حالة جديدة لتتبع أخطاء كلمة المرور في الوقت الفعلي ---
+    const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+    
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newPassword = e.target.value;
+        setPassword(newPassword);
+        // التحقق من كلمة المرور وعرض الإرشادات فقط إذا كان الحقل غير فارغ
+        if (newPassword.length > 0) {
+            setPasswordErrors(validatePassword(newPassword));
+        } else {
+            // إخفاء الإرشادات إذا قام المستخدم بمسح الحقل
+            setPasswordErrors([]);
+        }
+    };
+    // --- نهاية التعديل 1 ---
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,7 +75,6 @@ const AuthPage = () => {
         setLoading(false);
     };
 
-    // --- بداية التعديل: تحديث دالة إنشاء الحساب ---
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!agreedToTerms) {
@@ -73,27 +86,18 @@ const AuthPage = () => {
             return;
         }
 
-        // 1. التحقق من قوة كلمة المرور أولاً
-        const passwordErrors = validatePassword(password);
-        if (passwordErrors.length > 0) {
+        // التحقق النهائي عند الإرسال لا يزال مهماً
+        const finalPasswordErrors = validatePassword(password);
+        if (finalPasswordErrors.length > 0) {
             toast({
                 title: 'كلمة المرور لا تفي بالشروط',
-                description: (
-                    <div className="text-right">
-                        <p className="mb-2">لإنشاء الحساب، يجب أن تفي كلمة المرور بالشروط التالية:</p>
-                        <ul className="list-disc list-inside">
-                            {passwordErrors.map((err, index) => <li key={index}>{err}</li>)}
-                        </ul>
-                    </div>
-                ),
+                description: "يرجى التأكد من أن كلمة المرور تستوفي جميع الشروط الموضحة.",
                 variant: 'destructive',
-                duration: 9000,
             });
-            return; // إيقاف العملية إذا كانت كلمة المرور ضعيفة
+            return;
         }
 
         setLoading(true);
-        // 2. إذا كانت كلمة المرور قوية، أكمل عملية التسجيل
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -110,8 +114,8 @@ const AuthPage = () => {
         }
         setLoading(false);
     };
-    // --- نهاية التعديل ---
-
+    
+    // ... (بقية الدوال تبقى كما هي)
     const handlePasswordReset = async () => {
         if (!resetEmail) {
             toast({ title: 'خطأ', description: 'يرجى إدخال البريد الإلكتروني.', variant: 'destructive' });
@@ -149,6 +153,7 @@ const AuthPage = () => {
         }
     };
 
+
     return (
         <div className="flex items-center justify-center min-h-screen bg-background rtl">
             <Card className="w-full max-w-md mx-4">
@@ -165,6 +170,7 @@ const AuthPage = () => {
                             <TabsTrigger value="signup">حساب جديد</TabsTrigger>
                         </TabsList>
                         <TabsContent value="login">
+                           {/* ... نموذج تسجيل الدخول يبقى كما هو ... */}
                            <form onSubmit={handleLogin} className="space-y-4 pt-4">
                                <div className="space-y-2">
                                    <Label htmlFor="login-email">البريد الإلكتروني</Label>
@@ -224,7 +230,27 @@ const AuthPage = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="signup-password">كلمة المرور</Label>
-                                    <Input id="signup-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                                    {/* --- بداية التعديل 2: ربط دالة التحقق بحقل الإدخال --- */}
+                                    <Input 
+                                        id="signup-password" 
+                                        type="password" 
+                                        value={password} 
+                                        onChange={handlePasswordChange} 
+                                        required 
+                                    />
+                                    {/* --- نهاية التعديل 2 --- */}
+                                    
+                                    {/* --- بداية التعديل 3: إضافة عرض الإرشادات تحت الحقل مباشرة --- */}
+                                    {password.length > 0 && passwordErrors.length > 0 && (
+                                        <div className="p-2 text-xs text-muted-foreground bg-secondary/30 rounded-md">
+                                            <ul className="space-y-1">
+                                                {passwordErrors.map((error, index) => (
+                                                    <li key={index}>- {error}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {/* --- نهاية التعديل 3 --- */}
                                 </div>
                                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
                                     <Checkbox
@@ -243,7 +269,8 @@ const AuthPage = () => {
                         </TabsContent>
                     </Tabs>
                    
-                    <div className="relative my-4">
+                   {/* ... بقية الواجهة الرسومية تبقى كما هي ... */}
+                   <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
                             <span className="w-full border-t" />
                         </div>
@@ -269,7 +296,6 @@ const AuthPage = () => {
                         </Link>
                          الخاصة بنا.
                     </p>
-
                 </CardContent>
             </Card>
         </div>
