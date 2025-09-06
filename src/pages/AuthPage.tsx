@@ -18,6 +18,25 @@ const GoogleIcon = () => (
     </svg>
 );
 
+// --- بداية الإضافة: دالة التحقق من كلمة المرور ---
+const validatePassword = (password: string) => {
+    const errors: string[] = [];
+    if (password.length < 6) {
+        errors.push("يجب أن تتكون من 6 أحرف على الأقل.");
+    }
+    if (!/[a-z]/.test(password)) {
+        errors.push("يجب أن تحتوي على حرف إنجليزي صغير (مثل: a, b, c).");
+    }
+    if (!/[A-Z]/.test(password)) {
+        errors.push("يجب أن تحتوي على حرف إنجليزي كبير (مثل: A, B, C).");
+    }
+    if (!/[0-9]/.test(password)) {
+        errors.push("يجب أن تحتوي على رقم (مثل: 1, 2, 3).");
+    }
+    return errors;
+};
+// --- نهاية الإضافة ---
+
 const AuthPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -42,7 +61,7 @@ const AuthPage = () => {
         setLoading(false);
     };
 
-    // --- بداية التعديل ---
+    // --- بداية التعديل: تحديث دالة إنشاء الحساب ---
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!agreedToTerms) {
@@ -53,23 +72,41 @@ const AuthPage = () => {
             });
             return;
         }
+
+        // 1. التحقق من قوة كلمة المرور أولاً
+        const passwordErrors = validatePassword(password);
+        if (passwordErrors.length > 0) {
+            toast({
+                title: 'كلمة المرور لا تفي بالشروط',
+                description: (
+                    <div className="text-right">
+                        <p className="mb-2">لإنشاء الحساب، يجب أن تفي كلمة المرور بالشروط التالية:</p>
+                        <ul className="list-disc list-inside">
+                            {passwordErrors.map((err, index) => <li key={index}>{err}</li>)}
+                        </ul>
+                    </div>
+                ),
+                variant: 'destructive',
+                duration: 9000,
+            });
+            return; // إيقاف العملية إذا كانت كلمة المرور ضعيفة
+        }
+
         setLoading(true);
+        // 2. إذا كانت كلمة المرور قوية، أكمل عملية التسجيل
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: { full_name: fullName },
-                // لم نعد بحاجة لـ emailRedirectTo هنا لأن الدخول فوري
             },
         });
 
         if (error) {
             toast({ title: 'خطأ في التسجيل', description: error.message, variant: 'destructive' });
         } else if (data.user) {
-            // بما أن تفعيل البريد الإلكتروني معطل، فالمستخدم الآن مسجل دخوله
             toast({ title: 'تم إنشاء الحساب بنجاح', description: 'أهلاً بك في Serve Me!' });
-            // سيتم توجيه المستخدم وهو مسجل دخوله
-            navigate('/'); 
+            navigate('/');
         }
         setLoading(false);
     };
@@ -128,52 +165,52 @@ const AuthPage = () => {
                             <TabsTrigger value="signup">حساب جديد</TabsTrigger>
                         </TabsList>
                         <TabsContent value="login">
-                            <form onSubmit={handleLogin} className="space-y-4 pt-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="login-email">البريد الإلكتروني</Label>
-                                    <Input id="login-email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="login-password">كلمة المرور</Label>
-                                    <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                                </div>
-                                <div className="text-right">
-                                    <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button variant="link" type="button" className="p-0 h-auto text-xs">نسيت كلمة المرور؟</Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="sm:max-w-[425px]">
-                                            <DialogHeader>
-                                                <DialogTitle>استعادة كلمة المرور</DialogTitle>
-                                                <DialogDescription>
-                                                    أدخل بريدك الإلكتروني المسجل وسنرسل لك رابطاً لإعادة تعيين كلمة مرورك.
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            <div className="grid gap-4 py-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="reset-email">البريد الإلكتروني</Label>
-                                                    <Input
-                                                        id="reset-email"
-                                                        type="email"
-                                                        value={resetEmail}
-                                                        onChange={(e) => setResetEmail(e.target.value)}
-                                                        placeholder="email@example.com"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <DialogFooter>
-                                                <Button variant="ghost" onClick={() => setIsResetDialogOpen(false)}>إلغاء</Button>
-                                                <Button onClick={handlePasswordReset} disabled={loading}>
-                                                    {loading ? '...جاري الإرسال' : 'إرسال رابط الاستعادة'}
-                                                </Button>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
-                                <Button type="submit" className="w-full btn-gradient" disabled={loading}>
-                                    {loading ? 'جاري التحقق...' : 'تسجيل الدخول'}
-                                </Button>
-                            </form>
+                           <form onSubmit={handleLogin} className="space-y-4 pt-4">
+                               <div className="space-y-2">
+                                   <Label htmlFor="login-email">البريد الإلكتروني</Label>
+                                   <Input id="login-email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                               </div>
+                               <div className="space-y-2">
+                                   <Label htmlFor="login-password">كلمة المرور</Label>
+                                   <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                               </div>
+                               <div className="text-right">
+                                   <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                                       <DialogTrigger asChild>
+                                           <Button variant="link" type="button" className="p-0 h-auto text-xs">نسيت كلمة المرور؟</Button>
+                                       </DialogTrigger>
+                                       <DialogContent className="sm:max-w-[425px]">
+                                           <DialogHeader>
+                                               <DialogTitle>استعادة كلمة المرور</DialogTitle>
+                                               <DialogDescription>
+                                                   أدخل بريدك الإلكتروني المسجل وسنرسل لك رابطاً لإعادة تعيين كلمة مرورك.
+                                               </DialogDescription>
+                                           </DialogHeader>
+                                           <div className="grid gap-4 py-4">
+                                               <div className="space-y-2">
+                                                   <Label htmlFor="reset-email">البريد الإلكتروني</Label>
+                                                   <Input
+                                                       id="reset-email"
+                                                       type="email"
+                                                       value={resetEmail}
+                                                       onChange={(e) => setResetEmail(e.target.value)}
+                                                       placeholder="email@example.com"
+                                                   />
+                                               </div>
+                                           </div>
+                                           <DialogFooter>
+                                               <Button variant="ghost" onClick={() => setIsResetDialogOpen(false)}>إلغاء</Button>
+                                               <Button onClick={handlePasswordReset} disabled={loading}>
+                                                   {loading ? '...جاري الإرسال' : 'إرسال رابط الاستعادة'}
+                                               </Button>
+                                           </DialogFooter>
+                                       </DialogContent>
+                                   </Dialog>
+                               </div>
+                               <Button type="submit" className="w-full btn-gradient" disabled={loading}>
+                                   {loading ? 'جاري التحقق...' : 'تسجيل الدخول'}
+                               </Button>
+                           </form>
                         </TabsContent>
                         <TabsContent value="signup">
                             <form onSubmit={handleSignUp} className="space-y-4 pt-4">
@@ -205,7 +242,7 @@ const AuthPage = () => {
                             </form>
                         </TabsContent>
                     </Tabs>
-                    
+                   
                     <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
                             <span className="w-full border-t" />
@@ -215,10 +252,10 @@ const AuthPage = () => {
                         </div>
                     </div>
 
-                    <Button 
-                        variant="secondary" 
-                        className="w-full" 
-                        onClick={handleGoogleLogin} 
+                    <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={handleGoogleLogin}
                         disabled={loading}
                     >
                         التسجيل عبر جوجل
@@ -226,7 +263,7 @@ const AuthPage = () => {
                     </Button>
 
                     <p className="px-8 text-center text-xs text-muted-foreground mt-4">
-                        بالاستمرار، أنت توافق على 
+                        بالاستمرار، أنت توافق على
                         <Link to="/terms" className="underline underline-offset-4 hover:text-primary">
                             شروط الخدمة
                         </Link>
