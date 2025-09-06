@@ -398,7 +398,18 @@ const handleResetCategory = () => {
 
             <div className="bg-card dark:bg-card-dark rounded-lg p-4 shadow-lg overflow-hidden">
 
-              <Carousel opts={{ align: "start", loop: true, direction: 'rtl' }} className="w-full">
+
+
+
+              
+             
+<Carousel opts={{ align: 'start', direction: 'rtl', loop: true, speed: 30 }} className="w-full">
+
+
+
+
+
+  
 
                 <CarouselContent className="-ml-4">
 
