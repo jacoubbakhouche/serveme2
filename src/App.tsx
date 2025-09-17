@@ -1,66 +1,68 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-// ✨ 1. استيراد "Navigate" للقيام بعملية التوجيه
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
-// --- استيراد الصفحات ---
+// --- Import all your pages ---
 import LayoutRoute from "./components/LayoutRoute";
-import AddServicePage from "./pages/AddServicePage";
 import AuthPage from "./pages/AuthPage";
-import ChatPage from "./pages/ChatPage";
 import HomePage from "./pages/HomePage";
-import MessagesPage from "./pages/MessagesPage";
-import NotFound from "./pages/NotFound";
+import CompleteProfilePage from "./pages/CompleteProfilePage";
+import TermsPage from "./pages/TermsPage";
 import ProfilePage from "./pages/ProfilePage";
-import ProviderPublicProfilePage from "./pages/ProviderPublicProfilePage";
 import ProvidersPage from "./pages/ProvidersPage";
+import MessagesPage from "./pages/MessagesPage";
+import ChatPage from "./pages/ChatPage";
+import AddServicePage from "./pages/AddServicePage";
+import ProviderPublicProfilePage from "./pages/ProviderPublicProfilePage";
 import ServiceDetailPage from "./pages/ServiceDetailPage";
 import AdminPage from "./pages/AdminPage";
 import AdminChatPage from "./pages/AdminChatPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import TermsPage from "./pages/TermsPage";
-import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import AdminAdsPage from "./pages/AdminAdsPage";
-import CompleteProfilePage from "./pages/CompleteProfilePage";
-
+import NotificationsPage from "./pages/NotificationsPage";
+import UpdatePasswordPage from "./pages/UpdatePasswordPage";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// ✨ 2. إنشاء مكون جديد لتنظيم المسارات والتحقق من المستخدم
+// This component contains all the routing logic
 const AppRoutes = () => {
+  // It gets the user object AND a loading state from the context
   const { user, isLoading } = useAuth();
 
-  // عرض شاشة تحميل بسيطة بينما يتم التحقق من حالة المستخدم
+  // ✨ KEY FIX: It shows a loading message until the auth check is complete
   if (isLoading) {
-    return <div>جاري التحميل...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div>Loading...</div>
+      </div>
+    );
   }
 
   return (
     <Routes>
-      {/* المنطق الجديد:
-        - إذا كان المستخدم مسجلاً، أي طلب للصفحة الرئيسية "/" سيتم تحويله إلى "/dashboard".
-        - إذا لم يكن مسجلاً، أي طلب للصفحة الرئيسية "/" سيتم تحويله إلى "/auth".
+      {/* This is the main route. It now works correctly because it only runs AFTER isLoading is false.
+        - If the user object exists, it redirects to the dashboard.
+        - If the user object is null, it redirects to the login page.
       */}
       <Route 
         path="/" 
         element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />} 
       />
 
-      {/* المسارات العامة التي لا تتطلب تسجيل دخول */}
+      {/* Public routes */}
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/complete-profile" element={<CompleteProfilePage />} />
 
-      {/* المسارات المحمية التي تتطلب تسجيل دخول */}
+      {/* Protected routes (require login) */}
       <Route element={<LayoutRoute />}>
         <Route path="/dashboard" element={<HomePage />} />
-        <Route path="/providers" element={<ProvidersPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/providers" element={<ProvidersPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/chat/:id" element={<ChatPage />} />
         <Route path="/add-service" element={<AddServicePage />} />
@@ -73,15 +75,13 @@ const AppRoutes = () => {
         <Route path="/update-password" element={<UpdatePasswordPage />} />
       </Route>
 
-      {/* صفحة الخطأ 404 */}
+      {/* 404 Not Found page */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
 
-
 const App = () => {
-  // ✨ 3. تبسيط مكون App الرئيسي
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -89,7 +89,6 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            {/* استدعاء المكون الجديد الذي يحتوي على كل المسارات */}
             <AppRoutes />
           </AuthProvider>
         </BrowserRouter>
