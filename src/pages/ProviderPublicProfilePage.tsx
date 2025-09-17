@@ -1,5 +1,4 @@
 // src/pages/ProviderPublicProfilePage.tsx
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -32,7 +31,7 @@ const ProviderPublicProfilePage = () => {
       if (!id) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*') // This automatically fetches age and gender now
         .eq('id', id)
         .single();
       if (error) throw new Error(error.message);
@@ -41,7 +40,6 @@ const ProviderPublicProfilePage = () => {
     enabled: !!id,
   });
 
-  // ✅ الكود هنا بسيط، فقط يجلب البيانات كما هي من قاعدة البيانات
   const { data: posts, isLoading: isLoadingPosts } = useQuery<PostWithDetails[]>({
     queryKey: ['providerPosts', id],
     queryFn: async () => {
@@ -61,7 +59,6 @@ const ProviderPublicProfilePage = () => {
     enabled: !!id,
   });
 
-  // ✅ نفس الشيء هنا، فقط جلب البيانات بدون تعديل
   const { data: reviews, isLoading: isLoadingReviews } = useQuery<ReviewWithUser[]>({
     queryKey: ['reviews', id],
     queryFn: async () => {
@@ -90,10 +87,10 @@ const ProviderPublicProfilePage = () => {
     return (
       <div>
         <div className="text-center p-4">
-          <h2 className="text-xl font-semibold mb-4">خطأ</h2>
-          <p>عفواً، لم نتمكن من العثور على مزود الخدمة المطلوب.</p>
+          <h2 className="text-xl font-semibold mb-4">Error</h2>
+          <p>Sorry, we could not find the requested service provider.</p>
           <Button onClick={() => navigate(-1)} variant="link" className="mt-4">
-            العودة للخلف
+            Go Back
           </Button>
         </div>
       </div>
@@ -106,17 +103,18 @@ const ProviderPublicProfilePage = () => {
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate(-1)} className="text-sm">
             <ArrowRight className="ml-2 h-4 w-4" />
-            العودة
+            Back
           </Button>
-          <h1 className="text-2xl font-bold gradient-text">ملف مزود الخدمة</h1>
+          <h1 className="text-2xl font-bold gradient-text">Service Provider Profile</h1>
         </div>
         
+        {/* The 'provider' object containing all data is passed here */}
         <ProviderPublicProfileHeader provider={provider} />
         
         {provider.description && (
           <div className="max-w-4xl mx-auto px-4">
             <div className="dark-card p-6 rounded-lg">
-              <h2 className="text-xl font-semibold mb-3">نبذة عني</h2>
+              <h2 className="text-xl font-semibold mb-3">About Me</h2>
               <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
                 {provider.description}
               </p>
@@ -127,8 +125,8 @@ const ProviderPublicProfilePage = () => {
         <div className="max-w-4xl mx-auto px-4">
           <Tabs defaultValue="portfolio" className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-card/80 backdrop-blur-sm">
-              <TabsTrigger value="portfolio">معرض الأعمال</TabsTrigger>
-              <TabsTrigger value="reviews">التقييمات</TabsTrigger>
+              <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+              <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
 
             <TabsContent value="portfolio" className="mt-4">
@@ -144,7 +142,7 @@ const ProviderPublicProfilePage = () => {
                         key={post.id}
                         id={post.id}
                         providerId={id!}
-                        imageUrl={post.image_url!} // ✅ اسم الخاصية الصحيح
+                        imageUrl={post.image_url!}
                         description={post.description!}
                         likesCount={post.likes.length}
                         comments={post.comments}
@@ -153,7 +151,7 @@ const ProviderPublicProfilePage = () => {
                     ))
                   ) : (
                     <div className="text-center py-12 text-muted-foreground">
-                      <p>لم يقم مزود الخدمة بإضافة أي أعمال بعد.</p>
+                      <p>This service provider has not added any portfolio items yet.</p>
                     </div>
                   )}
                 </div>
