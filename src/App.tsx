@@ -7,8 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-// --- الخطوة 1: استيراد الصفحة الترحيبية الجديدة ---
-import LandingPage from "./pages/LandingPage";
+
 
 import LayoutRoute from "./components/LayoutRoute";
 import AddServicePage from "./pages/AddServicePage";
@@ -41,7 +40,7 @@ const AppWrapper = () => {
   return (
     <Routes>
       {/* المسارات العامة التي لا تتطلب تسجيل دخول */}
-      <Route path="/" element={<LandingPage />} /> {/* ✨ الصفحة الترحيبية أصبحت هي الرئيسية */}
+   
       <Route path="/auth" element={<AuthPage />} />
 
       {/* المسارات المحمية التي تتطلب تسجيل دخول */}
