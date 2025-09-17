@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/AuthPage.tsx
+
+import React, { useState } from 'react'; // Removed useEffect
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // Removed useNavigate because it's no longer used here
 
-// أيقونة جوجل
+// --- Google Icon ---
 const GoogleIcon = () => (
     <svg className="ml-2 h-4 w-4" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>Google</title>
@@ -13,7 +15,7 @@ const GoogleIcon = () => (
     </svg>
 );
 
-// أيقونة فيسبوك
+// --- Facebook Icon ---
 const FacebookIcon = () => (
     <svg className="ml-2 h-4 w-4" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>Facebook</title>
@@ -24,27 +26,14 @@ const FacebookIcon = () => (
 const AuthPage = () => {
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
-    const navigate = useNavigate();
 
-    useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                // Let LayoutRoute handle the final redirection logic
-                navigate('/');
-            }
-        });
-
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [navigate]);
+    // ✨ The entire useEffect hook has been deleted from here.
 
     const handleGoogleLogin = async () => {
         setLoading(true);
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                // ✨ Correction: Use the explicit, deployed URL
                 redirectTo: 'https://serveme2.vercel.app',
             },
         });
@@ -59,7 +48,6 @@ const AuthPage = () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'facebook',
             options: {
-                // ✨ Correction: Use the explicit, deployed URL
                 redirectTo: 'https://serveme2.vercel.app',
             },
         });
