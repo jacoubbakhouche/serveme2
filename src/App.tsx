@@ -31,8 +31,6 @@ import AdminAdsPage from "./pages/AdminAdsPage";
 import CompleteProfilePage from "./pages/CompleteProfilePage";
 
 
-
-
 const queryClient = new QueryClient();
 
 const VAPID_PUBLIC_KEY =
