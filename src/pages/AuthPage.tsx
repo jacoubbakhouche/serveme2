@@ -1,38 +1,78 @@
-// src/pages/AuthPage.tsx
-import React, { useState } from 'react'; // useEffect is removed
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// src/contexts/AuthContext.tsx
+
+import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom'; // useNavigate is removed
+import { User } from '@supabase/supabase-js';
 
-// ... (GoogleIcon and FacebookIcon components remain the same) ...
+// تعريف شكل البيانات التي سيوفرها الـ context
+interface AuthContextType {
+  user: User | null;
+  isLoading: boolean; // حالة التحميل مهمة جداً لحل مشكلة توجيه المسارات
+  // يمكنك إضافة isAdmin هنا إذا كنت تحتاجه في أماكن أخرى
+  // isAdmin: boolean; 
+}
 
-const AuthPage = () => {
-    const [loading, setLoading] = useState(false);
-    const { toast } = useToast();
+// إنشاء الـ context بقيم أولية
+// نبدأ بـ isLoading = true لنمنع اتخاذ أي قرار قبل التحقق من المستخدم
+const AuthContext = createContext<AuthContextType>({ user: null, isLoading: true });
 
-    // The entire useEffect hook for onAuthStateChange has been DELETED from this file.
-    
-    const handleGoogleLogin = async () => {
-        setLoading(true);
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: 'https://serveme2.vercel.app' },
-        });
-        if (error) {
-            toast({ title: "خطأ في تسجيل الدخول", description: error.message, variant: "destructive" });
-            setLoading(false);
-        }
+// إنشاء المكون المزوّد (Provider) الذي سيغلف التطبيق
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // يبدأ دائماً بحالة التحميل
+
+  useEffect(() => {
+    // التحقق من الجلسة الحالية عند تحميل التطبيق لأول مرة
+    const getInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+      } catch (e) {
+        console.error("Error getting initial session:", e);
+        setUser(null);
+      } finally {
+        // أهم خطوة: بعد التحقق الأولي، نوقف حالة التحميل
+        setIsLoading(false);
+      }
     };
 
-    const handleFacebookLogin = async () => {
-        // ... (this function is also correct)
-    };
+    getInitialSession();
 
+    // نستمع لأي تغييرات مستقبلية في حالة تسجيل الدخول (مثل تسجيل الدخول أو الخروج)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      // نتأكد من إيقاف التحميل هنا أيضاً
+      if (isLoading) {
+        setIsLoading(false);
+      }
+    });
+
+    // دالة التنظيف: إلغاء الاشتراك عند إغلاق التطبيق لتجنب استهلاك الموارد
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // القيمة التي سيتم توفيرها لجميع المكونات داخل التطبيق
+  const value = {
+    user,
+    isLoading,
+  };
+
+  // إذا كان التطبيق لا يزال في مرحلة التحقق الأولي، يمكنك عرض شاشة تحميل عامة هنا
+  // هذا اختياري ولكنه يحسن التجربة
+  if (isLoading) {
     return (
-        // ... (the JSX for this component is correct and does not need changes) ...
+      <div className="flex items-center justify-center h-screen">
+        <div>جاري التحميل...</div>
+      </div>
     );
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export default AuthPage;
+// إنشاء "خطاف" (Hook) مخصص لتسهيل استخدام الـ context في أي مكان
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
