@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
+// تم حذف استيراد TurnstileWidget
 
 // أيقونة جوجل
 const GoogleIcon = () => (
@@ -13,7 +14,7 @@ const GoogleIcon = () => (
     </svg>
 );
 
-// ✨ الخطوة 1: إضافة أيقونة فيسبوك
+// أيقونة فيسبوك
 const FacebookIcon = () => (
     <svg className="ml-2 h-4 w-4" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>Facebook</title>
@@ -21,9 +22,9 @@ const FacebookIcon = () => (
     </svg>
 );
 
-
 const AuthPage = () => {
     const [loading, setLoading] = useState(false);
+    // تم حذف حالة turnstileToken
     const { toast } = useToast();
     const navigate = useNavigate();
 
@@ -31,20 +32,16 @@ const AuthPage = () => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 const user = session.user;
+                // هذا الكود يمكن تبسيطه أو حذفه إذا كان LayoutRoute يقوم بنفس العمل
                 const { data: profile, error } = await supabase
                     .from('profiles')
-                    .select('full_name')
+                    .select('is_profile_complete') // التحقق من العلم الجديد
                     .eq('id', user.id)
                     .single();
 
-                if (error && error.code === 'PGRST116') {
-                    toast({
-                        title: 'أهلاً بك في Serve Me!',
-                        description: 'خطوة أخيرة، يرجى إكمال بيانات ملفك الشخصي.',
-                    });
+                if (profile && !profile.is_profile_complete) {
                     navigate('/complete-profile');
-                } else if (profile) {
-                    toast({ title: 'أهلاً بعودتك!' });
+                } else {
                     navigate('/dashboard');
                 }
             }
@@ -69,7 +66,6 @@ const AuthPage = () => {
         }
     };
 
-    // ✨ الخطوة 2: إضافة دالة تسجيل الدخول عبر فيسبوك
     const handleFacebookLogin = async () => {
         setLoading(true);
         const { error } = await supabase.auth.signInWithOAuth({
@@ -84,25 +80,24 @@ const AuthPage = () => {
         }
     };
 
-
     return (
         <div className="flex items-center justify-center min-h-screen bg-background rtl">
             <Card className="w-full max-w-sm mx-4">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold text-primary">Serve Me</CardTitle>
-                    {/* ✨ الخطوة 4: تحديث النص ليكون عامًا */}
                     <CardDescription>
-                        اختر الطريقة التي تناسبك للمتابعة
+                        دخول أو اشتراك فوري. سيتم إنشاء حسابك تلقائيًا إذا كنت مستخدمًا جديدًا
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4 pt-4">
-                    {/* ✨ الخطوة 3: إضافة زر فيسبوك بجانب زر جوجل */}
+                    {/* تم حذف مكون TurnstileWidget من هنا */}
+
                     <div className="space-y-3">
                         <Button
                             variant="secondary"
                             className="w-full text-lg py-6"
                             onClick={handleGoogleLogin}
-                            disabled={loading}
+                            disabled={loading} // الشرط يعتمد على loading فقط الآن
                         >
                             {loading ? '...جاري التحميل' : 'المتابعة باستخدام جوجل'}
                             <GoogleIcon />
@@ -111,12 +106,13 @@ const AuthPage = () => {
                             variant="default"
                             className="w-full text-lg py-6 bg-[#1877F2] hover:bg-[#166fe5] text-white"
                             onClick={handleFacebookLogin}
-                            disabled={loading}
+                            disabled={loading} // الشرط يعتمد على loading فقط الآن
                         >
                             {loading ? '...جاري التحميل' : 'المتابعة باستخدام فيسبوك'}
                             <FacebookIcon />
                         </Button>
                     </div>
+
                     <p className="px-8 text-center text-xs text-muted-foreground mt-2">
                         بالاستمرار، أنت توافق على
                         <Link to="/terms" className="underline underline-offset-4 hover:text-primary">
