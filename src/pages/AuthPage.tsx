@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
-// تم حذف استيراد TurnstileWidget
 
 // أيقونة جوجل
 const GoogleIcon = () => (
@@ -24,40 +23,29 @@ const FacebookIcon = () => (
 
 const AuthPage = () => {
     const [loading, setLoading] = useState(false);
-    // تم حذف حالة turnstileToken
     const { toast } = useToast();
     const navigate = useNavigate();
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
-                const user = session.user;
-                // هذا الكود يمكن تبسيطه أو حذفه إذا كان LayoutRoute يقوم بنفس العمل
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('is_profile_complete') // التحقق من العلم الجديد
-                    .eq('id', user.id)
-                    .single();
-
-                if (profile && !profile.is_profile_complete) {
-                    navigate('/complete-profile');
-                } else {
-                    navigate('/dashboard');
-                }
+                // Let LayoutRoute handle the final redirection logic
+                navigate('/');
             }
         });
 
         return () => {
             subscription.unsubscribe();
         };
-    }, [navigate, toast]);
+    }, [navigate]);
 
     const handleGoogleLogin = async () => {
         setLoading(true);
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/dashboard`,
+                // ✨ Correction: Use the explicit, deployed URL
+                redirectTo: 'https://serveme2.vercel.app',
             },
         });
         if (error) {
@@ -71,7 +59,8 @@ const AuthPage = () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'facebook',
             options: {
-                redirectTo: `${window.location.origin}/dashboard`,
+                // ✨ Correction: Use the explicit, deployed URL
+                redirectTo: 'https://serveme2.vercel.app',
             },
         });
         if (error) {
@@ -90,14 +79,12 @@ const AuthPage = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4 pt-4">
-                    {/* تم حذف مكون TurnstileWidget من هنا */}
-
                     <div className="space-y-3">
                         <Button
                             variant="secondary"
                             className="w-full text-lg py-6"
                             onClick={handleGoogleLogin}
-                            disabled={loading} // الشرط يعتمد على loading فقط الآن
+                            disabled={loading}
                         >
                             {loading ? '...جاري التحميل' : 'المتابعة باستخدام جوجل'}
                             <GoogleIcon />
@@ -106,7 +93,7 @@ const AuthPage = () => {
                             variant="default"
                             className="w-full text-lg py-6 bg-[#1877F2] hover:bg-[#166fe5] text-white"
                             onClick={handleFacebookLogin}
-                            disabled={loading} // الشرط يعتمد على loading فقط الآن
+                            disabled={loading}
                         >
                             {loading ? '...جاري التحميل' : 'المتابعة باستخدام فيسبوك'}
                             <FacebookIcon />
