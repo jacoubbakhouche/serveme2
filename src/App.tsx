@@ -7,8 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-// --- تم حذف استيراد LandingPage ---
-
 import LayoutRoute from "./components/LayoutRoute";
 import AddServicePage from "./pages/AddServicePage";
 import AuthPage from "./pages/AuthPage";
@@ -24,7 +22,6 @@ import AdminPage from "./pages/AdminPage";
 import AdminChatPage from "./pages/AdminChatPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import TermsPage from "./pages/TermsPage";
-// --- تم حذف استيراد IntroVideo ---
 import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import AdminAdsPage from "./pages/AdminAdsPage";
 import CompleteProfilePage from "./pages/CompleteProfilePage";
@@ -34,16 +31,16 @@ const queryClient = new QueryClient();
 const VAPID_PUBLIC_KEY =
   "BLkGz0mJpatxjHHUHfsHafwI6H8DqqVB6WQ6Bpy_GCNzl3o8Rw40jvRdlCcyifud2g-9jAdWO0PzFnyn8KFHQ2E";
 
+// ==================== ✨ تم التعديل هنا ✨ ====================
 const AppWrapper = () => {
   return (
     <Routes>
-      {/* المسارات العامة التي لا تتطلب تسجيل دخول */}
-      {/* ✨ تم التعديل هنا */}
-      <Route path="/" element={<HomePage />} /> 
+      {/* المسار العام الوحيد الذي لا يحتاج شريط علوي هو صفحة الدخول */}
       <Route path="/auth" element={<AuthPage />} />
 
-      {/* المسارات المحمية التي تتطلب تسجيل دخول */}
+      {/* جميع المسارات الأخرى تستخدم LayoutRoute لإظهار الشريط العلوي */}
       <Route element={<LayoutRoute />}>
+        <Route path="/" element={<HomePage />} /> {/* الصفحة الرئيسية الآن هنا */}
         <Route path="/dashboard" element={<HomePage />} />
         <Route path="/providers" element={<ProvidersPage />} />
         <Route path="/profile" element={<ProfilePage />} />
@@ -66,6 +63,8 @@ const AppWrapper = () => {
     </Routes>
   );
 };
+// ==========================================================
+
 
 // ... (بقية الكود يبقى كما هو بدون تغيير)
 
