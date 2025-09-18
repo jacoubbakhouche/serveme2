@@ -1,68 +1,52 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-// --- Import all your pages ---
+// --- تم حذف استيراد LandingPage ---
+
 import LayoutRoute from "./components/LayoutRoute";
-import AuthPage from "./pages/AuthPage";
-import HomePage from "./pages/HomePage";
-import CompleteProfilePage from "./pages/CompleteProfilePage";
-import TermsPage from "./pages/TermsPage";
-import ProfilePage from "./pages/ProfilePage";
-import ProvidersPage from "./pages/ProvidersPage";
-import MessagesPage from "./pages/MessagesPage";
-import ChatPage from "./pages/ChatPage";
 import AddServicePage from "./pages/AddServicePage";
+import AuthPage from "./pages/AuthPage";
+import ChatPage from "./pages/ChatPage";
+import HomePage from "./pages/HomePage";
+import MessagesPage from "./pages/MessagesPage";
+import NotFound from "./pages/NotFound";
+import ProfilePage from "./pages/ProfilePage";
 import ProviderPublicProfilePage from "./pages/ProviderPublicProfilePage";
+import ProvidersPage from "./pages/ProvidersPage";
 import ServiceDetailPage from "./pages/ServiceDetailPage";
 import AdminPage from "./pages/AdminPage";
 import AdminChatPage from "./pages/AdminChatPage";
-import AdminAdsPage from "./pages/AdminAdsPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import TermsPage from "./pages/TermsPage";
+// --- تم حذف استيراد IntroVideo ---
 import UpdatePasswordPage from "./pages/UpdatePasswordPage";
-import NotFound from "./pages/NotFound";
+import AdminAdsPage from "./pages/AdminAdsPage";
+import CompleteProfilePage from "./pages/CompleteProfilePage";
 
 const queryClient = new QueryClient();
 
-// This component contains all the routing logic
-const AppRoutes = () => {
-  // It gets the user object AND a loading state from the context
-  const { user, isLoading } = useAuth();
+const VAPID_PUBLIC_KEY =
+  "BLkGz0mJpatxjHHUHfsHafwI6H8DqqVB6WQ6Bpy_GCNzl3o8Rw40jvRdlCcyifud2g-9jAdWO0PzFnyn8KFHQ2E";
 
-  // ✨ KEY FIX: It shows a loading message until the auth check is complete
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div>Loading...</div>
-      </div>
-    );
-  }
-
+const AppWrapper = () => {
   return (
     <Routes>
-      {/* This is the main route. It now works correctly because it only runs AFTER isLoading is false.
-        - If the user object exists, it redirects to the dashboard.
-        - If the user object is null, it redirects to the login page.
-      */}
-      <Route 
-        path="/" 
-        element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth" replace />} 
-      />
-
-      {/* Public routes */}
+      {/* المسارات العامة التي لا تتطلب تسجيل دخول */}
+      {/* ✨ تم التعديل هنا */}
+      <Route path="/" element={<HomePage />} /> 
       <Route path="/auth" element={<AuthPage />} />
-      <Route path="/terms" element={<TermsPage />} />
-      <Route path="/complete-profile" element={<CompleteProfilePage />} />
 
-      {/* Protected routes (require login) */}
+      {/* المسارات المحمية التي تتطلب تسجيل دخول */}
       <Route element={<LayoutRoute />}>
         <Route path="/dashboard" element={<HomePage />} />
-        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/providers" element={<ProvidersPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/chat/:id" element={<ChatPage />} />
         <Route path="/add-service" element={<AddServicePage />} />
@@ -72,14 +56,176 @@ const AppRoutes = () => {
         <Route path="/admin/chat" element={<AdminChatPage />} />
         <Route path="/admin/ads" element={<AdminAdsPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route path="/update-password" element={<UpdatePasswordPage />} />
+        <Route path="/complete-profile" element={<CompleteProfilePage />} />
       </Route>
 
-      {/* 404 Not Found page */}
+      {/* صفحة الخطأ 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
+
+// ... (بقية الكود يبقى كما هو بدون تغيير)
+
+const NotificationSetup = () => {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      console.log("🚫 المتصفح لا يدعم Push Notifications");
+      return;
+    }
+
+    const registerPush = async () => {
+      try {
+        let registration;
+        try {
+          registration = await navigator.serviceWorker.register("/sw.js", {
+            scope: '/',
+            updateViaCache: 'none'
+          });
+          console.log("✅ Service Worker مسجل:", registration);
+          
+          if (registration.installing) {
+            await new Promise<void>((resolve) => {
+              registration.installing.addEventListener('statechange', () => {
+                if (registration.installing.state === 'installed') {
+                  resolve();
+                }
+              });
+            });
+          }
+        } catch (swError) {
+          console.error("❌ خطأ في تسجيل Service Worker:", swError);
+          return;
+        }
+
+        let permission = Notification.permission;
+        if (permission === "default") {
+          permission = await Notification.requestPermission();
+        }
+        
+        if (permission !== "granted") {
+          console.log("🚫 المستخدم رفض الإشعارات، الحالة:", permission);
+          return;
+        }
+
+        console.log("✅ تم منح إذن الإشعارات");
+
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (!subscription) {
+          console.log("📝 إنشاء push subscription جديد");
+          try {
+            subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+            });
+          } catch (subscribeError) {
+            console.error("❌ خطأ في إنشاء Push Subscription:", subscribeError);
+            return;
+          }
+        } else {
+          console.log("📩 استخدام push subscription موجود مسبقاً");
+        }
+
+        console.log("📩 Push Subscription:", subscription);
+
+        if (user && subscription) {
+          try {
+            console.log("💾 حفظ Push Subscription للمستخدم:", user.id);
+            const { data, error } = await supabase.functions.invoke('save-subscription', {
+              body: {
+                user_id: user.id,
+                subscription: subscription.toJSON(),
+              },
+            });
+
+            if (error) {
+              console.error("❌ خطأ في حفظ الاشتراك:", error);
+              setTimeout(registerPush, 5000);
+            } else {
+              console.log("✅ تم حفظ الاشتراك في Supabase:", data);
+              
+              if (process.env.NODE_ENV === 'development') {
+                setTimeout(async () => {
+                  try {
+                    await supabase.functions.invoke('send-push-notification', {
+                      body: {
+                        user_id: user.id,
+                        title: "🎉 مرحباً!",
+                        body: "تم تفعيل الإشعارات بنجاح، ستصلك الإشعارات حتى لو كان التطبيق مغلقاً!"
+                      }
+                    });
+                  } catch (testError) {
+                    console.log("تعذر إرسال إشعار تجريبي:", testError);
+                  }
+                }, 2000);
+              }
+            }
+          } catch (saveError) {
+            console.error("❌ خطأ في استدعاء دالة حفظ الاشتراك:", saveError);
+          }
+        }
+
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          console.log('📨 رسالة من Service Worker:', event.data);
+          
+          if (event.data?.type === 'PUSH_NOTIFICATION_RECEIVED') {
+            console.log('🔔 تم استلام إشعار أثناء فتح التطبيق:', event.data.data);
+          }
+        });
+
+        registration.addEventListener('updatefound', () => {
+          console.log('🔄 تم العثور على تحديث للـ Service Worker');
+          const newWorker = registration.installing;
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('🆕 Service Worker جديد متاح، يتم التحديث...');
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+              window.location.reload();
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error("❌ خطأ عام في إعداد الإشعارات:", err);
+        setTimeout(registerPush, 10000);
+      }
+    };
+
+    const timeoutId = setTimeout(registerPush, 1000);
+    
+    return () => clearTimeout(timeoutId);
+  }, [user]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        console.log('👁️ التطبيق أصبح مرئياً، التحقق من صحة Push Subscription');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
+
+  return null;
+};
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 const App = () => {
   return (
@@ -89,7 +235,8 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <AppRoutes />
+            <NotificationSetup />
+            <AppWrapper />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
