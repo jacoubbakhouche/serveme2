@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
 
 // أيقونة جوجل
 const GoogleIcon = () => (
@@ -22,51 +25,51 @@ const FacebookIcon = () => (
 );
 
 const AuthPage = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
     const navigate = useNavigate();
 
+    // هذا التأثير مسؤول عن التوجيه بعد تسجيل الدخول بنجاح
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' && session) {
-                // Let LayoutRoute handle the final redirection logic
-                navigate('/');
+                navigate('/dashboard');
             }
         });
-
         return () => {
             subscription.unsubscribe();
         };
     }, [navigate]);
 
-    const handleGoogleLogin = async () => {
+    // دالة لتسجيل الدخول فقط
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
         setLoading(true);
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                // ✨ Correction: Use the explicit, deployed URL
-                redirectTo: 'https://serveme2.vercel.app',
-            },
-        });
-        if (error) {
-            toast({ title: "خطأ في تسجيل الدخول عبر جوجل", description: error.message, variant: "destructive" });
+        setError(null);
+        try {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            toast({ title: 'أهلاً بعودتك!' });
+        } catch (err: any) {
+            setError(err.message || 'البريد الإلكتروني أو كلمة السر غير صحيحة.');
+        } finally {
             setLoading(false);
         }
     };
 
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        await supabase.auth.signInWithOAuth({ provider: 'google' });
+        setLoading(false);
+    };
+
     const handleFacebookLogin = async () => {
         setLoading(true);
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'facebook',
-            options: {
-                // ✨ Correction: Use the explicit, deployed URL
-                redirectTo: 'https://serveme2.vercel.app',
-            },
-        });
-        if (error) {
-            toast({ title: "خطأ في تسجيل الدخول عبر فيسبوك", description: error.message, variant: "destructive" });
-            setLoading(false);
-        }
+        await supabase.auth.signInWithOAuth({ provider: 'facebook' });
+        setLoading(false);
     };
 
     return (
@@ -75,28 +78,36 @@ const AuthPage = () => {
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold text-primary">Serve Me</CardTitle>
                     <CardDescription>
-                        دخول أو اشتراك فوري. سيتم إنشاء حسابك تلقائيًا إذا كنت مستخدمًا جديدًا
+                        سجل دخولك لمتابعة
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4 pt-4">
-                    <div className="space-y-3">
-                        <Button
-                            variant="secondary"
-                            className="w-full text-lg py-6"
-                            onClick={handleGoogleLogin}
-                            disabled={loading}
-                        >
-                            {loading ? '...جاري التحميل' : 'المتابعة باستخدام جوجل'}
-                            <GoogleIcon />
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="email">البريد الإلكتروني</Label>
+                            <Input id="email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">كلمة السر</Label>
+                            <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                        </div>
+                        {error && <p className="text-sm text-destructive text-center">{error}</p>}
+                        <Button type="submit" className="w-full" disabled={loading}>
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تسجيل الدخول'}
                         </Button>
-                        <Button
-                            variant="default"
-                            className="w-full text-lg py-6 bg-[#1877F2] hover:bg-[#166fe5] text-white"
-                            onClick={handleFacebookLogin}
-                            disabled={loading}
-                        >
-                            {loading ? '...جاري التحميل' : 'المتابعة باستخدام فيسبوك'}
-                            <FacebookIcon />
+                    </form>
+
+                    <div className="relative my-2">
+                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">أو</span></div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <Button variant="secondary" className="w-full" onClick={handleGoogleLogin} disabled={loading}>
+                            <GoogleIcon /> المتابعة باستخدام جوجل
+                        </Button>
+                        <Button className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white" onClick={handleFacebookLogin} disabled={loading}>
+                            <FacebookIcon /> المتابعة باستخدام فيسبوك
                         </Button>
                     </div>
 
