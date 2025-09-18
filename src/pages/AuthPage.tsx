@@ -65,7 +65,7 @@ const AuthPage = () => {
             {/* ✨ 2. قسم الصورة الكبيرة ✨ */}
             <div className="w-full md:w-1/2 flex justify-center items-center p-8">
                 <img
-                    src="/hero-image.png" // تأكد من أن اسم الصورة صحيح وموجود في مجلد public
+                    src="/auth-logo2.png" // تأكد من أن اسم الصورة صحيح وموجود في مجلد public
                     alt="Serve Me Hero"
                     className="w-56 md:w-80 animate-float"
                 />
