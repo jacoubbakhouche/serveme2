@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
+// ✨ 1. استيراد المكونات الجديدة للنموذج
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
@@ -25,9 +26,12 @@ const FacebookIcon = () => (
 );
 
 const AuthPage = () => {
+    // ✨ 2. إضافة حالات جديدة للبريد الإلكتروني، كلمة السر، ونمط النموذج (دخول أو اشتراك)
+    const [isSignUp, setIsSignUp] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
+
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
     const navigate = useNavigate();
@@ -36,25 +40,40 @@ const AuthPage = () => {
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' && session) {
+                // لا داعي للتحقق هنا، لأن LayoutRoute سيقوم بذلك
                 navigate('/dashboard');
             }
         });
+
         return () => {
             subscription.unsubscribe();
         };
     }, [navigate]);
 
-    // دالة لتسجيل الدخول فقط
-    const handleLogin = async (e: React.FormEvent) => {
+    // ✨ 3. إنشاء دالة للتعامل مع تسجيل الدخول والاشتراك التقليدي
+    const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
         try {
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) throw error;
-            toast({ title: 'أهلاً بعودتك!' });
+            if (isSignUp) {
+                // حالة إنشاء حساب جديد
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                if (error) throw error;
+                if (data.session) {
+                    toast({ title: 'تم إنشاء الحساب بنجاح!', description: 'مرحباً بك في Serve Me.' });
+                } else {
+                     toast({ title: 'تم التسجيل', description: 'لقد أرسلنا رابط تأكيد إلى بريدك الإلكتروني.' });
+                }
+            } else {
+                // حالة تسجيل الدخول
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                toast({ title: 'أهلاً بعودتك!' });
+            }
         } catch (err: any) {
-            setError(err.message || 'البريد الإلكتروني أو كلمة السر غير صحيحة.');
+            setError(err.message || 'حدث خطأ ما.');
         } finally {
             setLoading(false);
         }
@@ -78,11 +97,13 @@ const AuthPage = () => {
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold text-primary">Serve Me</CardTitle>
                     <CardDescription>
-                        سجل دخولك لمتابعة
+                        {isSignUp ? 'أنشئ حساباً جديداً للبدء' : 'سجل دخولك لمتابعة'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4 pt-4">
-                    <form onSubmit={handleLogin} className="space-y-4">
+
+                    {/* ✨ 4. إضافة نموذج تسجيل الدخول / الاشتراك */}
+                    <form onSubmit={handleEmailAuth} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="email">البريد الإلكتروني</Label>
                             <Input id="email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -93,15 +114,28 @@ const AuthPage = () => {
                         </div>
                         {error && <p className="text-sm text-destructive text-center">{error}</p>}
                         <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تسجيل الدخول'}
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isSignUp ? 'إنشاء حساب' : 'تسجيل الدخول')}
                         </Button>
                     </form>
+                    
+                    <p className="text-center text-sm text-muted-foreground">
+                        {isSignUp ? 'لديك حساب بالفعل؟' : 'ليس لديك حساب؟'}{' '}
+                        <button onClick={() => { setIsSignUp(!isSignUp); setError(null); }} className="underline hover:text-primary">
+                            {isSignUp ? 'تسجيل الدخول' : 'إنشاء حساب'}
+                        </button>
+                    </p>
 
+                    {/* --- فاصل --- */}
                     <div className="relative my-2">
-                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">أو</span></div>
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">أو</span>
+                        </div>
                     </div>
 
+                    {/* --- أزرار جوجل وفيسبوك --- */}
                     <div className="space-y-3">
                         <Button variant="secondary" className="w-full" onClick={handleGoogleLogin} disabled={loading}>
                             <GoogleIcon /> المتابعة باستخدام جوجل
