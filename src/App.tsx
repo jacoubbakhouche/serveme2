@@ -1,161 +1,247 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Link, useNavigate } from 'react-router-dom';
-// ✨ 1. استيراد المكونات الجديدة للنموذج
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-// أيقونة جوجل
-const GoogleIcon = () => (
-    <svg className="ml-2 h-4 w-4" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <title>Google</title>
-        <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-4.82 1.9-5.78 0-10.47-4.88-10.47-10.92S6.7 1.08 12.48 1.08c3.24 0 5.4 1.35 6.67 2.53l-2.52 2.34c-.82-.76-2.04-1.35-4.15-1.35-4.82 0-8.72 3.9-8.72 8.72s3.9 8.72 8.72 8.72c5.33 0 8.14-3.83 8.4-7.42h-8.4v-3.28z"/>
-    </svg>
-);
+// --- تم حذف استيراد LandingPage ---
 
-// أيقونة فيسبوك
-const FacebookIcon = () => (
-    <svg className="ml-2 h-4 w-4" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <title>Facebook</title>
-        <path fill="currentColor" d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.732 0 1.325-.593 1.325-1.325V1.325C24 .593 23.407 0 22.675 0z"/>
-    </svg>
-);
+import LayoutRoute from "./components/LayoutRoute";
+import AddServicePage from "./pages/AddServicePage";
+import AuthPage from "./pages/AuthPage";
+import ChatPage from "./pages/ChatPage";
+import HomePage from "./pages/HomePage";
+import MessagesPage from "./pages/MessagesPage";
+import NotFound from "./pages/NotFound";
+import ProfilePage from "./pages/ProfilePage";
+import ProviderPublicProfilePage from "./pages/ProviderPublicProfilePage";
+import ProvidersPage from "./pages/ProvidersPage";
+import ServiceDetailPage from "./pages/ServiceDetailPage";
+import AdminPage from "./pages/AdminPage";
+import AdminChatPage from "./pages/AdminChatPage";
+import NotificationsPage from "./pages/NotificationsPage";
+import TermsPage from "./pages/TermsPage";
+// --- تم حذف استيراد IntroVideo ---
+import UpdatePasswordPage from "./pages/UpdatePasswordPage";
+import AdminAdsPage from "./pages/AdminAdsPage";
+import CompleteProfilePage from "./pages/CompleteProfilePage";
 
-const AuthPage = () => {
-    // ✨ 2. إضافة حالات جديدة للبريد الإلكتروني، كلمة السر، ونمط النموذج (دخول أو اشتراك)
-    const [isSignUp, setIsSignUp] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
+const queryClient = new QueryClient();
 
-    const [loading, setLoading] = useState(false);
-    const { toast } = useToast();
-    const navigate = useNavigate();
+const VAPID_PUBLIC_KEY =
+  "BLkGz0mJpatxjHHUHfsHafwI6H8DqqVB6WQ6Bpy_GCNzl3o8Rw40jvRdlCcyifud2g-9jAdWO0PzFnyn8KFHQ2E";
 
-    // هذا التأثير مسؤول عن التوجيه بعد تسجيل الدخول بنجاح
-    useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                // لا داعي للتحقق هنا، لأن LayoutRoute سيقوم بذلك
-                navigate('/dashboard');
-            }
-        });
+const AppWrapper = () => {
+  return (
+    <Routes>
+      {/* المسارات العامة التي لا تتطلب تسجيل دخول */}
+      {/* ✨ تم التعديل هنا */}
+      <Route path="/" element={<HomePage />} /> 
+      <Route path="/auth" element={<AuthPage />} />
 
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [navigate]);
+      {/* المسارات المحمية التي تتطلب تسجيل دخول */}
+      <Route element={<LayoutRoute />}>
+        <Route path="/dashboard" element={<HomePage />} />
+        <Route path="/providers" element={<ProvidersPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/chat/:id" element={<ChatPage />} />
+        <Route path="/add-service" element={<AddServicePage />} />
+        <Route path="/provider/:id" element={<ProviderPublicProfilePage />} />
+        <Route path="/service/:id" element={<ServiceDetailPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/chat" element={<AdminChatPage />} />
+        <Route path="/admin/ads" element={<AdminAdsPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
+        <Route path="/complete-profile" element={<CompleteProfilePage />} />
+      </Route>
 
-    // ✨ 3. إنشاء دالة للتعامل مع تسجيل الدخول والاشتراك التقليدي
-    const handleEmailAuth = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-
-        try {
-            if (isSignUp) {
-                // حالة إنشاء حساب جديد
-                const { data, error } = await supabase.auth.signUp({ email, password });
-                if (error) throw error;
-                if (data.session) {
-                    toast({ title: 'تم إنشاء الحساب بنجاح!', description: 'مرحباً بك في Serve Me.' });
-                } else {
-                     toast({ title: 'تم التسجيل', description: 'لقد أرسلنا رابط تأكيد إلى بريدك الإلكتروني.' });
-                }
-            } else {
-                // حالة تسجيل الدخول
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                toast({ title: 'أهلاً بعودتك!' });
-            }
-        } catch (err: any) {
-            setError(err.message || 'حدث خطأ ما.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleGoogleLogin = async () => {
-        setLoading(true);
-        await supabase.auth.signInWithOAuth({ provider: 'google' });
-        setLoading(false);
-    };
-
-    const handleFacebookLogin = async () => {
-        setLoading(true);
-        await supabase.auth.signInWithOAuth({ provider: 'facebook' });
-        setLoading(false);
-    };
-
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-background rtl">
-            <Card className="w-full max-w-sm mx-4">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-bold text-primary">Serve Me</CardTitle>
-                    <CardDescription>
-                        {isSignUp ? 'أنشئ حساباً جديداً للبدء' : 'سجل دخولك لمتابعة'}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4 pt-4">
-
-                    {/* ✨ 4. إضافة نموذج تسجيل الدخول / الاشتراك */}
-                    <form onSubmit={handleEmailAuth} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">البريد الإلكتروني</Label>
-                            <Input id="email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password">كلمة السر</Label>
-                            <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                        </div>
-                        {error && <p className="text-sm text-destructive text-center">{error}</p>}
-                        <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isSignUp ? 'إنشاء حساب' : 'تسجيل الدخول')}
-                        </Button>
-                    </form>
-                    
-                    <p className="text-center text-sm text-muted-foreground">
-                        {isSignUp ? 'لديك حساب بالفعل؟' : 'ليس لديك حساب؟'}{' '}
-                        <button onClick={() => { setIsSignUp(!isSignUp); setError(null); }} className="underline hover:text-primary">
-                            {isSignUp ? 'تسجيل الدخول' : 'إنشاء حساب'}
-                        </button>
-                    </p>
-
-                    {/* --- فاصل --- */}
-                    <div className="relative my-2">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">أو</span>
-                        </div>
-                    </div>
-
-                    {/* --- أزرار جوجل وفيسبوك --- */}
-                    <div className="space-y-3">
-                        <Button variant="secondary" className="w-full" onClick={handleGoogleLogin} disabled={loading}>
-                            <GoogleIcon /> المتابعة باستخدام جوجل
-                        </Button>
-                        <Button className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white" onClick={handleFacebookLogin} disabled={loading}>
-                            <FacebookIcon /> المتابعة باستخدام فيسبوك
-                        </Button>
-                    </div>
-
-                    <p className="px-8 text-center text-xs text-muted-foreground mt-2">
-                        بالاستمرار، أنت توافق على
-                        <Link to="/terms" className="underline underline-offset-4 hover:text-primary">
-                            {' '}شروط الخدمة{' '}
-                        </Link>
-                        الخاصة بنا.
-                    </p>
-                </CardContent>
-            </Card>
-        </div>
-    );
+      {/* صفحة الخطأ 404 */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 };
 
-export default AuthPage;
+// ... (بقية الكود يبقى كما هو بدون تغيير)
+
+const NotificationSetup = () => {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      console.log("🚫 المتصفح لا يدعم Push Notifications");
+      return;
+    }
+
+    const registerPush = async () => {
+      try {
+        let registration;
+        try {
+          registration = await navigator.serviceWorker.register("/sw.js", {
+            scope: '/',
+            updateViaCache: 'none'
+          });
+          console.log("✅ Service Worker مسجل:", registration);
+          
+          if (registration.installing) {
+            await new Promise<void>((resolve) => {
+              registration.installing.addEventListener('statechange', () => {
+                if (registration.installing.state === 'installed') {
+                  resolve();
+                }
+              });
+            });
+          }
+        } catch (swError) {
+          console.error("❌ خطأ في تسجيل Service Worker:", swError);
+          return;
+        }
+
+        let permission = Notification.permission;
+        if (permission === "default") {
+          permission = await Notification.requestPermission();
+        }
+        
+        if (permission !== "granted") {
+          console.log("🚫 المستخدم رفض الإشعارات، الحالة:", permission);
+          return;
+        }
+
+        console.log("✅ تم منح إذن الإشعارات");
+
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (!subscription) {
+          console.log("📝 إنشاء push subscription جديد");
+          try {
+            subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+            });
+          } catch (subscribeError) {
+            console.error("❌ خطأ في إنشاء Push Subscription:", subscribeError);
+            return;
+          }
+        } else {
+          console.log("📩 استخدام push subscription موجود مسبقاً");
+        }
+
+        console.log("📩 Push Subscription:", subscription);
+
+        if (user && subscription) {
+          try {
+            console.log("💾 حفظ Push Subscription للمستخدم:", user.id);
+            const { data, error } = await supabase.functions.invoke('save-subscription', {
+              body: {
+                user_id: user.id,
+                subscription: subscription.toJSON(),
+              },
+            });
+
+            if (error) {
+              console.error("❌ خطأ في حفظ الاشتراك:", error);
+              setTimeout(registerPush, 5000);
+            } else {
+              console.log("✅ تم حفظ الاشتراك في Supabase:", data);
+              
+              if (process.env.NODE_ENV === 'development') {
+                setTimeout(async () => {
+                  try {
+                    await supabase.functions.invoke('send-push-notification', {
+                      body: {
+                        user_id: user.id,
+                        title: "🎉 مرحباً!",
+                        body: "تم تفعيل الإشعارات بنجاح، ستصلك الإشعارات حتى لو كان التطبيق مغلقاً!"
+                      }
+                    });
+                  } catch (testError) {
+                    console.log("تعذر إرسال إشعار تجريبي:", testError);
+                  }
+                }, 2000);
+              }
+            }
+          } catch (saveError) {
+            console.error("❌ خطأ في استدعاء دالة حفظ الاشتراك:", saveError);
+          }
+        }
+
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          console.log('📨 رسالة من Service Worker:', event.data);
+          
+          if (event.data?.type === 'PUSH_NOTIFICATION_RECEIVED') {
+            console.log('🔔 تم استلام إشعار أثناء فتح التطبيق:', event.data.data);
+          }
+        });
+
+        registration.addEventListener('updatefound', () => {
+          console.log('🔄 تم العثور على تحديث للـ Service Worker');
+          const newWorker = registration.installing;
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('🆕 Service Worker جديد متاح، يتم التحديث...');
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+              window.location.reload();
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error("❌ خطأ عام في إعداد الإشعارات:", err);
+        setTimeout(registerPush, 10000);
+      }
+    };
+
+    const timeoutId = setTimeout(registerPush, 1000);
+    
+    return () => clearTimeout(timeoutId);
+  }, [user]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        console.log('👁️ التطبيق أصبح مرئياً، التحقق من صحة Push Subscription');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
+
+  return null;
+};
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <NotificationSetup />
+            <AppWrapper />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
+
+export default App;
