@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
-import TurnstileWidget from '@/components/TurnstileWidget';
 
 // أيقونة جوجل
 const GoogleIcon = () => (
@@ -14,7 +13,7 @@ const GoogleIcon = () => (
     </svg>
 );
 
-// ✨ الخطوة 1: إضافة أيقونة فيسبوك
+// أيقونة فيسبوك
 const FacebookIcon = () => (
     <svg className="ml-2 h-4 w-4" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>Facebook</title>
@@ -25,7 +24,7 @@ const FacebookIcon = () => (
 
 const AuthPage = () => {
     const [loading, setLoading] = useState(false);
-    const [turnstileToken, setTurnstileToken] = useState<string>('');
+    // ❌ تم حذف حالة turnstileToken من هنا
     const { toast } = useToast();
     const navigate = useNavigate();
 
@@ -71,7 +70,6 @@ const AuthPage = () => {
         }
     };
 
-    // ✨ الخطوة 2: إضافة دالة تسجيل الدخول عبر فيسبوك
     const handleFacebookLogin = async () => {
         setLoading(true);
         const { error } = await supabase.auth.signInWithOAuth({
@@ -96,15 +94,15 @@ const AuthPage = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4 pt-4">
-                    <TurnstileWidget onVerify={setTurnstileToken} />
+                    {/* ❌ تم حذف مكون TurnstileWidget من هنا */}
 
-                    {/* ✨ الخطوة 3: إضافة زر فيسبوك بجانب زر جوجل */}
                     <div className="space-y-3">
                         <Button
                             variant="secondary"
                             className="w-full text-lg py-6"
                             onClick={handleGoogleLogin}
-                            disabled={loading || !turnstileToken}
+                            // ✅ تم تحديث خاصية التعطيل
+                            disabled={loading}
                         >
                             {loading ? '...جاري التحميل' : 'المتابعة باستخدام جوجل'}
                             <GoogleIcon />
@@ -113,7 +111,8 @@ const AuthPage = () => {
                             variant="default"
                             className="w-full text-lg py-6 bg-[#1877F2] hover:bg-[#166fe5] text-white"
                             onClick={handleFacebookLogin}
-                            disabled={loading || !turnstileToken}
+                            // ✅ تم تحديث خاصية التعطيل
+                            disabled={loading}
                         >
                             {loading ? '...جاري التحميل' : 'المتابعة باستخدام فيسبوك'}
                             <FacebookIcon />
