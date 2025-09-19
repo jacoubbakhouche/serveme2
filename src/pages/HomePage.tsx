@@ -106,7 +106,17 @@ const fetchServices = async (): Promise<ServiceWithProfile[]> => {
     console.error("Error fetching services with profiles:", error);
     throw new Error(error.message);
   }
+  if (!services) return [];
 
+  // منطق الترتيب الخاص بك يبقى كما هو
+  const isFirstVisit = !sessionStorage.getItem('hasVisited');
+  if (isFirstVisit) {
+    sessionStorage.setItem('hasVisited', 'true');
+    return services.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  } else {
+    return services.sort(() => Math.random() - 0.5);
+  }
+};
 
 
 
