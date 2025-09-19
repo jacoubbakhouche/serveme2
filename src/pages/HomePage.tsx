@@ -672,6 +672,3 @@ const handleResetCategory = () => {
 
 
 export default HomePage;
-
-
-عرض طريقة التفكير
