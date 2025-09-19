@@ -1,4 +1,4 @@
-// src/pages/HomePage.tsx
+ // src/pages/HomePage.tsx
 
 
 
@@ -54,90 +54,61 @@ type Ad = Tables<'ads'>;
 
 
 
-
-
-
-
-
-
-
-// راح نزيد    فتو دوبروفيل + الاسم  لي كارد  الخدمات
-
-
-
 type ServiceWithProfile = Tables<'services'> & {
-  profiles: {
-    id: string;
-    full_name: string | null;
-    avatar_url: string | null;
-    is_verified: boolean;
-  } | null;
+
+  profiles: { is_verified: boolean } | null;
+
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 const fetchServices = async (): Promise<ServiceWithProfile[]> => {
-  const { data: services, error } = await supabase
-    .from('services')
-    .select(`
-      *,
-      profiles (
-        id,
-        full_name,
-        avatar_url,
-        is_verified
-      )
-    `);
 
-  if (error) {
-    console.error("Error fetching services with profiles:", error);
-    throw new Error(error.message);
-  }
-  if (!services) return [];
+  const isFirstVisit = !sessionStorage.getItem('hasVisited');
 
-  // منطق الترتيب الخاص بك يبقى كما هو
-  const isFirstVisit = !sessionStorage.getItem('hasVisited');
-  if (isFirstVisit) {
-    sessionStorage.setItem('hasVisited', 'true');
-    return services.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  } else {
-    return services.sort(() => Math.random() - 0.5);
-  }
+  let processedServices: Tables<'services'>[] = [];
+
+
+
+  const { data: services, error } = await supabase.from('services').select('*');
+
+  if (error) throw new Error(error.message);
+
+  if (!services) return [];
+
+
+
+  if (isFirstVisit) {
+
+    sessionStorage.setItem('hasVisited', 'true');
+
+    processedServices = services.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  } else {
+
+    processedServices = services.sort(() => Math.random() - 0.5);
+
+  }
+
+
+
+  const userIds = [...new Set(processedServices.map(service => service.user_id))];
+
+  const { data: profiles, error: profilesError } = await supabase.from('profiles').select('id, is_verified').in('id', userIds);
+
+  if (profilesError) console.error("Error fetching profiles:", profilesError);
+
+
+
+  return processedServices.map(service => ({
+
+    ...service,
+
+    profiles: profiles?.find(profile => profile.id === service.user_id) || null
+
+  }));
+
 };
-
-
-
-
-
-
-
-
-
-
-  
-
-
-  
-
-
-
-
-
-
-
 
 
 
@@ -430,7 +401,7 @@ const handleResetCategory = () => {
 
 
 
-              
+              
              
 <Carousel opts={{ align: 'start', direction: 'rtl', loop: true, speed: 30 }} className="w-full">
 
@@ -438,7 +409,7 @@ const handleResetCategory = () => {
 
 
 
-  
+  
 
                 <CarouselContent className="-ml-4">
 
@@ -701,3 +672,6 @@ const handleResetCategory = () => {
 
 
 export default HomePage;
+
+
+عرض طريقة التفكير
