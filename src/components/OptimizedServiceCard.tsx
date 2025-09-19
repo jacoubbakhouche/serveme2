@@ -161,6 +161,3 @@ const OptimizedServiceCard = memo(({
 });
 OptimizedServiceCard.displayName = 'OptimizedServiceCard';
 export default OptimizedServiceCard;
-
-
-عرض طريقة التفكير
