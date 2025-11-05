@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MapPin, User, BadgeCheck } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 import { Link } from 'react-router-dom';
-import OnlineStatus from './OnlineStatus';
 
 interface ProviderCardProps {
   provider: Tables<'profiles'>;
@@ -35,25 +34,13 @@ const ProviderCard = ({ provider }: ProviderCardProps) => {
     // ## تم التعديل هنا لاستخدام كلاس dark-card الموحد ##
     <Card className="dark-card card-hover h-full text-white">
       <CardContent className="p-4 sm:p-5 h-full flex flex-col">
-
-
-       
-        <div className="relative">
-  <Avatar className="w-16 h-16 border-2 border-white/20">
-    <AvatarImage src={provider.avatar_url || undefined} alt={displayName} />
-    <AvatarFallback className="bg-slate-800 text-white font-bold">
-      {getInitials(displayName)}
-    </AvatarFallback>
-  </Avatar>
-
-  {/* ✅ النقطة الخضراء (Online Status) */}
-  <div className="absolute bottom-0 right-0">
-    <OnlineStatus userId={provider.id} />
-  </div>
-</div>
-
-
-       
+        <div className="flex items-start gap-4">
+          <Avatar className="w-16 h-16 border-2 border-white/20">
+            <AvatarImage src={provider.avatar_url || undefined} alt={displayName} />
+            <AvatarFallback className="bg-slate-800 text-white font-bold">
+              {getInitials(displayName)}
+            </AvatarFallback>
+          </Avatar>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
